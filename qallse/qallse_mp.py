@@ -14,7 +14,8 @@ class MpConfig(Config1GeV):
 
 
 class QallseMp(Qallse):
-    """ Same as Qallse, but also applies a *max path* cut in order to discard isolated quadruplets."""
+    """Same as Qallse, but also applies a *max path* cut in order to discard isolated quadruplets."""
+
     config: MpConfig
 
     def __init__(self, *args, **kwargs):
@@ -40,7 +41,6 @@ class QallseMp(Qallse):
 
         return 1 + inner_length + outer_length
 
-
     def build_model(self, *args, **kwargs):
         # create the model as usual
         QallseBase.build_model(self, *args, **kwargs)
@@ -51,9 +51,10 @@ class QallseMp(Qallse):
         exec_time = time.process_time() - start_time
 
         self.logger.info(
-            f'MaxPath done in {exec_time:.2f}s. '
-            f'doublets: {len(self.qubo_doublets)}, triplets: {len(self.qubo_triplets)}, ' +
-            f'quadruplets: {len(self.quadruplets)} (dropped {dropped})')
+            f"MaxPath done in {exec_time:.2f}s. "
+            f"doublets: {len(self.qubo_doublets)}, triplets: {len(self.qubo_triplets)}, "
+            + f"quadruplets: {len(self.quadruplets)} (dropped {dropped})"
+        )
         self.log_build_stats()
 
     def _filter_quadruplets(self) -> int:
@@ -71,7 +72,7 @@ class QallseMp(Qallse):
                 self._register_qubo_quadruplet(qplet)
             elif self.dataw.is_real_xplet(qplet.hit_ids()) == XpletType.REAL:
                 # we are dropping a real qplet here, log it !
-                self.hard_cuts_stats.append(f'qplet,{qplet},max_path,{qplet.max_path},')
+                self.hard_cuts_stats.append(f"qplet,{qplet},max_path,{qplet.max_path},")
 
         dropped = len(self.quadruplets) - len(filtered_qplets)
         self.quadruplets = filtered_qplets

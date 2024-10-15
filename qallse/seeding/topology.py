@@ -33,17 +33,15 @@ class DetectorModel:
         # values from the ATLAS inner detector geometry, layerIdx 0 is the innerMost pixel layer
         # order
         det.layers = [
-            SiliconLayer(0, 32., -455, 455),  # 8-2
-            SiliconLayer(0, 72., -455, 455),  # 8-4
-            SiliconLayer(0, 116., -455, 455),  # 8-6
-            SiliconLayer(0, 172., -455, 455),  # 8-8
-
-            SiliconLayer(0, 260., -1030, 1030),  # 13-2
-            SiliconLayer(0, 360., -1030, 1030),  # 13-4
-            SiliconLayer(0, 500., -1030, 1030),  # 13-6
-            SiliconLayer(0, 660., -1030, 1030),  # 13-8
-
-            SiliconLayer(0, 820., -1030, 1030),  # 17-2
-            SiliconLayer(0, 1020., -1030, 1030),  # 17-4
+            SiliconLayer(0, 32.0, -455, 455),  # 8-2
+            SiliconLayer(0, 72.0, -455, 455),  # 8-4
+            SiliconLayer(0, 116.0, -455, 455),  # 8-6
+            SiliconLayer(0, 172.0, -455, 455),  # 8-8
+            SiliconLayer(0, 260.0, -1030, 1030),  # 13-2
+            SiliconLayer(0, 360.0, -1030, 1030),  # 13-4
+            SiliconLayer(0, 500.0, -1030, 1030),  # 13-6
+            SiliconLayer(0, 660.0, -1030, 1030),  # 13-8
+            SiliconLayer(0, 820.0, -1030, 1030),  # 17-2
+            SiliconLayer(0, 1020.0, -1030, 1030),  # 17-4
         ]
         return det

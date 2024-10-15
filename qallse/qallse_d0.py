@@ -24,6 +24,7 @@ class D0Config(MpConfig):
 
 class QallseD0(QallseMp):
     """Same as QallseMp, but use a variable bias weight derived from the impact parameters."""
+
     config: D0Config
 
     def __init__(self, *args, **kwargs):
@@ -39,8 +40,11 @@ class QallseD0(QallseMp):
         """
         tplet.d0, tplet.z0 = self._compute_impact_params_for(tplet)
 
-        tplet.w = self.config.d0_factor * (1.0 - np.exp(-abs(tplet.d0) / self.config.d0_denom)) + \
-                  self.config.z0_factor * (1.0 - np.exp(-abs(tplet.z0) / self.config.z0_denom))
+        tplet.w = self.config.d0_factor * (
+            1.0 - np.exp(-abs(tplet.d0) / self.config.d0_denom)
+        ) + self.config.z0_factor * (
+            1.0 - np.exp(-abs(tplet.z0) / self.config.z0_denom)
+        )
 
         return tplet.w
 
@@ -48,9 +52,11 @@ class QallseD0(QallseMp):
         #: compute d0 and z0 for a given triplet.
 
         # circle passing by the three hits
-        tplet.circle = define_circle(tplet.d1.h1.coord_2d, tplet.d1.h2.coord_2d, tplet.d2.h2.coord_2d)
+        tplet.circle = define_circle(
+            tplet.d1.h1.coord_2d, tplet.d1.h2.coord_2d, tplet.d2.h2.coord_2d
+        )
         if tplet.circle[0] is None:
-            self.logger.error(f'no circle for {tplet}.')
+            self.logger.error(f"no circle for {tplet}.")
             return 0, 0  # TODO the three points are perfectly aligned, so no circle...
 
         (cx, cy), cr = tplet.circle

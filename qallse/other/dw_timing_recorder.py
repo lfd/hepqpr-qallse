@@ -40,27 +40,28 @@ from contextlib import contextmanager
 import dimod
 
 _INTERESTING_COMPUTATION_KEYS = [
-    'clock_diff',  # difference in seconds between the client-server UTC clocks
-    'time_created',  # client-side: request created
-    'time_received',  # server-side: request received
-    'time_solved',  # server-side: response sent
-    'time_resolved'  # client-side: response received
+    "clock_diff",  # difference in seconds between the client-server UTC clocks
+    "time_created",  # client-side: request created
+    "time_received",  # server-side: request received
+    "time_solved",  # server-side: response sent
+    "time_resolved",  # client-side: response received
 ]
 
 
 class TimingRecord(dict):
     """Use this wrapper to simplify the handling of times."""
+
     @property
     def qpu_time(self):
-        return self['timing']['total_real_time'] * 1E-6  # in microseconds
+        return self["timing"]["total_real_time"] * 1e-6  # in microseconds
 
     @property
     def service_time(self):
-        return (self['time_solved'] - self['time_received']).total_seconds()
+        return (self["time_solved"] - self["time_received"]).total_seconds()
 
     @property
     def total_time(self):
-        return (self['time_resolved'] - self['time_created']).total_seconds()
+        return (self["time_resolved"] - self["time_created"]).total_seconds()
 
     @property
     def internet_latency(self):
@@ -73,18 +74,20 @@ def _result_to_response_hook_patch(variables, vartype):
     def _hook(computation):
         result = computation.result()
         # get the samples. The future will return all spins so filter for the ones in variables
-        samples = [[sample[v] for v in variables] for sample in result.get('solutions')]
+        samples = [[sample[v] for v in variables] for sample in result.get("solutions")]
         # the only two data vectors we're interested in are energies and num_occurrences
-        vectors = {'energy': result['energies']}
-        if 'num_occurrences' in result:
-            vectors['num_occurrences'] = result['num_occurrences']
+        vectors = {"energy": result["energies"]}
+        if "num_occurrences" in result:
+            vectors["num_occurrences"] = result["num_occurrences"]
         # PATCH: record all interesting timing information
         info = {}
         for attr in _INTERESTING_COMPUTATION_KEYS:
             info[attr] = getattr(computation, attr, None)
-        if 'timing' in result:
-            info['timing'] = result['timing']
-        return dimod.Response.from_samples(samples, vectors, info, vartype, variable_labels=variables)
+        if "timing" in result:
+            info["timing"] = result["timing"]
+        return dimod.Response.from_samples(
+            samples, vectors, info, vartype, variable_labels=variables
+        )
 
     return _hook
 
@@ -107,18 +110,20 @@ def solver_with_timing(sampler: dimod.Sampler, **solver_kwargs):
         return
 
     import dwave.system.samplers.dwave_sampler as spl
+
     original_hook = spl._result_to_response_hook
     spl._result_to_response_hook = _result_to_response_hook_patch
 
     records = []
 
     try:
+
         def dimod_callback(Q, best_state):
             result = sampler.sample_qubo(Q, **solver_kwargs)
             sample = next(result.samples())
             for key, value in sample.items():
                 best_state[key] = value
-            result.info['q_size'] = len(Q)
+            result.info["q_size"] = len(Q)
             records.append(result.info)
             return best_state
 

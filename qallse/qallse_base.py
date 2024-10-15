@@ -18,8 +18,13 @@ class ConfigBase(ABC):
 
     def as_dict(self):
         """Return the current configuration as a dictionary."""
-        return dict([(k, getattr(self, k)) for k in dir(self)
-                     if not k.startswith('_') and not k in ['as_dict', 'update']])
+        return dict(
+            [
+                (k, getattr(self, k))
+                for k in dir(self)
+                if not k.startswith("_") and not k in ["as_dict", "update"]
+            ]
+        )
 
     def update(self, logger=None, **kwargs):
         """Update this configuration, doing type conversions if necessary."""
@@ -27,16 +32,20 @@ class ConfigBase(ABC):
             try:
                 if hasattr(self, k):
                     typ = type(getattr(self, k))
-                    if type(v) != typ: v = typ(v)
+                    if type(v) != typ:
+                        v = typ(v)
                     setattr(self, k, v)
                 else:
-                    logger.warning(f'got an unknown config parameter {k}={v}')
+                    logger.warning(f"got an unknown config parameter {k}={v}")
             except Exception:
                 if logger is not None:
-                    logger.warning(f'ignored config {k}={v}, wrong type (should be of {typ})')
+                    logger.warning(
+                        f"ignored config {k}={v}, wrong type (should be of {typ})"
+                    )
 
 
 # ============================================================
+
 
 class QallseBase(ABC):
     """Abstract base class of a Qallse model. Handles everything except the hard cuts and the qubo weights computations."""
@@ -49,8 +58,9 @@ class QallseBase(ABC):
 
         self.config = self._get_base_config()
         self.config.update(logger=self.logger, **config)
-        self.logger.debug(f'using config:')
-        for (k, v) in self.config.as_dict().items(): self.logger.debug(f'    {k}: {v}')
+        self.logger.debug(f"using config:")
+        for k, v in self.config.as_dict().items():
+            self.logger.debug(f"    {k}: {v}")
 
         #: All hits generated
         self.hits: Dict[str, Hit] = {}
@@ -88,7 +98,9 @@ class QallseBase(ABC):
         start_time = time.process_time()
         self.hard_cuts_stats = self.hard_cuts_stats[:1]
 
-        initial_doublets = doublets.values if isinstance(doublets, pd.DataFrame) else doublets
+        initial_doublets = (
+            doublets.values if isinstance(doublets, pd.DataFrame) else doublets
+        )
 
         self._create_doublets(initial_doublets)
         self._create_triplets()
@@ -97,15 +109,22 @@ class QallseBase(ABC):
         end_time = time.process_time() - start_time
 
         self.logger.info(
-            f'Model built in {end_time:.2f}s. '
-            f'doublets: {len(self.doublets)}/{len(self.qubo_doublets)}, '
-            f'triplets: {len(self.triplets)}/{len(self.qubo_triplets)}, '
-            f'quadruplets: {len(self.quadruplets)}')
+            f"Model built in {end_time:.2f}s. "
+            f"doublets: {len(self.doublets)}/{len(self.qubo_doublets)}, "
+            f"triplets: {len(self.triplets)}/{len(self.qubo_triplets)}, "
+            f"quadruplets: {len(self.quadruplets)}"
+        )
 
         return self
 
-    def sample_qubo(self, Q: TQubo = None, return_time=False, logfile: str = None, seed: int=None, **qbsolv_params) -> Union[
-        object, Tuple[object, float]]:
+    def sample_qubo(
+        self,
+        Q: TQubo = None,
+        return_time=False,
+        logfile: str = None,
+        seed: int = None,
+        **qbsolv_params,
+    ) -> Union[object, Tuple[object, float]]:
         """
         Submit a QUBO to (see `qbsolv <https://github.com/dwavesystems/qbsolv>`_).
 
@@ -117,26 +136,32 @@ class QallseBase(ABC):
         :return: a dimod response or a tuple (dimod response, exec_time)
          (see `dimod.Response <https://docs.ocean.dwavesys.com/projects/dimod/en/latest/reference/response.html>`_)
         """
-        raise NotImplementedError("Dwave's QBsolv is deprecated as of 2022. " \
-                "The hybrid Dwave solver requires refactoring.")
+        raise NotImplementedError(
+            "Dwave's QBsolv is deprecated as of 2022. "
+            "The hybrid Dwave solver requires refactoring."
+        )
         from dwave_qbsolv import QBSolv
 
-        if Q is None: Q = self.to_qubo()
+        if Q is None:
+            Q = self.to_qubo()
         if seed is None:
             import random
-            seed = random.randint(0, 1<<31)
+
+            seed = random.randint(0, 1 << 31)
 
         # run qbsolv
         start_time = time.process_time()
         try:
             with capture_stdout(logfile):
                 response = QBSolv().sample_qubo(Q, seed=seed, **qbsolv_params)
-        except: # fails if called from ipython notebook...
+        except:  # fails if called from ipython notebook...
             response = QBSolv().sample_qubo(Q, seed=seed, **qbsolv_params)
 
         exec_time = time.process_time() - start_time
 
-        self.logger.info(f'QUBO of size {len(Q)} sampled in {exec_time:.2f}s (seed {seed}).')
+        self.logger.info(
+            f"QUBO of size {len(Q)} sampled in {exec_time:.2f}s (seed {seed})."
+        )
 
         return (response, exec_time) if return_time else response
 
@@ -149,7 +174,9 @@ class QallseBase(ABC):
         :param sample: the QUBO response to process
         :return: the list of final doublets
         """
-        final_triplets = [Triplet.name_to_hit_ids(k) for k, v in sample.items() if v == 1]
+        final_triplets = [
+            Triplet.name_to_hit_ids(k) for k, v in sample.items() if v == 1
+        ]
         final_doublets = tracks_to_xplets(final_triplets)
         return np.unique(final_doublets, axis=0).tolist()
 
@@ -158,7 +185,7 @@ class QallseBase(ABC):
     def _create_doublets(self, initial_doublets):
         # Generate Doublet structures from the initial doublets, calling _is_invalid_doublet to apply early cuts
         doublets = []
-        for (start_id, end_id) in initial_doublets:
+        for start_id, end_id in initial_doublets:
             start, end = self.hits[start_id], self.hits[end_id]
             d = Doublet(start, end)
             if not self._is_invalid_doublet(d):
@@ -166,7 +193,7 @@ class QallseBase(ABC):
                 end.inner.append(d)
                 doublets.append(d)
 
-        self.logger.info(f'created {len(doublets)} doublets.')
+        self.logger.info(f"created {len(doublets)} doublets.")
         self.doublets = doublets
 
     @abstractmethod
@@ -184,7 +211,7 @@ class QallseBase(ABC):
                     d1.outer.append(t)
                     d2.inner.append(t)
                     triplets.append(t)
-        self.logger.info(f'created {len(triplets)} triplets.')
+        self.logger.info(f"created {len(triplets)} triplets.")
         self.triplets = triplets
 
     @abstractmethod
@@ -211,7 +238,7 @@ class QallseBase(ABC):
                     if register_qubo:
                         self._register_qubo_quadruplet(qplet)
 
-        self.logger.info(f'created {len(quadruplets)} quadruplets.')
+        self.logger.info(f"created {len(quadruplets)} quadruplets.")
         self.quadruplets = quadruplets
 
     @abstractmethod
@@ -255,7 +282,9 @@ class QallseBase(ABC):
 
     # ---------------------------------------------
 
-    def to_qubo(self, return_stats=False) -> Union[TQubo, Tuple[TQubo, Tuple[int, int, int]]]:
+    def to_qubo(
+        self, return_stats=False
+    ) -> Union[TQubo, Tuple[TQubo, Tuple[int, int, int]]]:
         """
         Generate the QUBO. Attention: ensure that :py:meth:~`build_model` has been called previously.
         :param return_stats: if set, also return the number of variables and coulpers.
@@ -263,7 +292,11 @@ class QallseBase(ABC):
         """
 
         Q = {}
-        hits, doublets, triplets = self.qubo_hits, self.qubo_doublets, self.qubo_triplets
+        hits, doublets, triplets = (
+            self.qubo_hits,
+            self.qubo_doublets,
+            self.qubo_triplets,
+        )
         quadruplets = self.quadruplets
 
         start_time = time.process_time()
@@ -276,11 +309,11 @@ class QallseBase(ABC):
         # 2a: exclusion couplers (no two triplets can share the same doublet)
         for hit_id, hit in hits.items():
             for conflicts in [hit.inner_kept, hit.outer_kept]:
-                for (d1, d2) in itertools.combinations(conflicts, 2):
+                for d1, d2 in itertools.combinations(conflicts, 2):
                     for t1 in d1.inner_kept | d1.outer_kept:
                         for t2 in d2.inner_kept | d2.outer_kept:
                             if t1 == t2:
-                                self.logger.warning(f'tplet_1 == tplet_2 == {t1}')
+                                self.logger.warning(f"tplet_1 == tplet_2 == {t1}")
                                 continue
                             key = (str(t1), str(t2))
                             if key not in Q and tuple(reversed(key)) not in Q:
@@ -295,8 +328,10 @@ class QallseBase(ABC):
         n_incl_couplers = len(Q) - (n_vars + n_excl_couplers)
         exec_time = time.process_time() - start_time
 
-        self.logger.info(f'Qubo generated in {exec_time:.2f}s. Size: {len(Q)}. Vars: {n_vars}, '
-                         f'excl. couplers: {n_excl_couplers}, incl. couplers: {n_incl_couplers}')
+        self.logger.info(
+            f"Qubo generated in {exec_time:.2f}s. Size: {len(Q)}. Vars: {n_vars}, "
+            f"excl. couplers: {n_excl_couplers}, incl. couplers: {n_incl_couplers}"
+        )
         if return_stats:
             return Q, (n_vars, n_incl_couplers, n_excl_couplers)
         else:

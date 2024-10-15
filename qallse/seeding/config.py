@@ -19,8 +19,12 @@ class SeedingConfig:
     def _compute_derived_attrs(self):
         self.maxTheta = 2 * np.arctan(np.exp(-self.maxEta))
         self.maxCtg = np.cos(self.maxTheta) / np.sin(self.maxTheta)
-        self.minOuterZ = self.zMinus - self.maxOuterRadius * self.maxCtg - self.zTolerance
-        self.maxOuterZ = self.zPlus + self.maxOuterRadius * self.maxCtg + self.zTolerance
+        self.minOuterZ = (
+            self.zMinus - self.maxOuterRadius * self.maxCtg - self.zTolerance
+        )
+        self.maxOuterZ = (
+            self.zPlus + self.maxOuterRadius * self.maxCtg + self.zTolerance
+        )
 
 
 class HptSeedingConfig(SeedingConfig):

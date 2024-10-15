@@ -75,11 +75,13 @@ class SpacepointStorage:
         self.covR = np.ones(spacepoints.shape[0]) * 100
 
         # start/end index of each phi slice/layer
-        self.phiSlices = [SpacepointLayerRange(config.nLayers) for _ in range(config.nPhiSlices)]
+        self.phiSlices = [
+            SpacepointLayerRange(config.nLayers) for _ in range(config.nPhiSlices)
+        ]
 
-        spacepoints['phi'] = calc_phi(spacepoints['x'], spacepoints['y'])
-        spacepoints['bin_phi'] = scale_phi(spacepoints['phi'], config.nPhiSlices)
-        spacepoints['r'] = calc_r(spacepoints['x'], spacepoints['y'])
+        spacepoints["phi"] = calc_phi(spacepoints["x"], spacepoints["y"])
+        spacepoints["bin_phi"] = scale_phi(spacepoints["phi"], config.nPhiSlices)
+        spacepoints["r"] = calc_r(spacepoints["x"], spacepoints["y"])
 
         self.module_ids = np.zeros(spacepoints.shape[0])
 
@@ -87,20 +89,22 @@ class SpacepointStorage:
         layNoToIdx = {2: 0, 4: 1, 6: 2, 8: 3}
         volToOffset = {8: 0, 13: 4, 17: 8}
         crtIdx = 0
-        for (sliceid, volid, layid), df in spacepoints.groupby(['bin_phi', 'volume_id', 'layer_id'], sort=False):
+        for (sliceid, volid, layid), df in spacepoints.groupby(
+            ["bin_phi", "volume_id", "layer_id"], sort=False
+        ):
             layIdx = volToOffset[volid] + layNoToIdx[layid]
             nbHits = df.shape[0]
             self.phiSlices[sliceid].layerBegin[layIdx] = crtIdx
             nextIdx = crtIdx + nbHits
             self.phiSlices[sliceid].layerEnd[layIdx] = nextIdx
 
-            pixel = df['volume_id'] == 8
+            pixel = df["volume_id"] == 8
             self.type[crtIdx:nextIdx] = pixel.values
 
-            self.x[crtIdx:nextIdx] = df['x'].values
-            self.y[crtIdx:nextIdx] = df['y'].values
-            self.z[crtIdx:nextIdx] = df['z'].values
-            self.r[crtIdx:nextIdx] = df['r'].values
-            self.idsp[crtIdx:nextIdx] = df['hit_id'].values
-            self.module_ids[crtIdx:nextIdx] = df['module_id'].values
+            self.x[crtIdx:nextIdx] = df["x"].values
+            self.y[crtIdx:nextIdx] = df["y"].values
+            self.z[crtIdx:nextIdx] = df["z"].values
+            self.r[crtIdx:nextIdx] = df["r"].values
+            self.idsp[crtIdx:nextIdx] = df["hit_id"].values
+            self.module_ids[crtIdx:nextIdx] = df["module_id"].values
             crtIdx = nextIdx

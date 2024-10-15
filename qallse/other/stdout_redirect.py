@@ -14,7 +14,7 @@ from contextlib import contextmanager
 
 @contextmanager
 def stdout_redirect(to=os.devnull):
-    '''
+    """
     Usage:
 
     .. code::
@@ -26,7 +26,7 @@ def stdout_redirect(to=os.devnull):
             os.system("echo non-Python applications are also supported")
 
     `Source <https://stackoverflow.com/a/17954769>`_.
-    '''
+    """
     fd = sys.stdout.fileno()
 
     ##### assert that Python and C stdio write using the same file descriptor
@@ -35,10 +35,10 @@ def stdout_redirect(to=os.devnull):
     def _redirect_stdout(to):
         sys.stdout.close()  # + implicit flush()
         os.dup2(to.fileno(), fd)  # fd writes to 'to' file
-        sys.stdout = os.fdopen(fd, 'w')  # Python writes to fd
+        sys.stdout = os.fdopen(fd, "w")  # Python writes to fd
 
-    with os.fdopen(os.dup(fd), 'w') as old_stdout:
-        with open(to, 'w') as file:
+    with os.fdopen(os.dup(fd), "w") as old_stdout:
+        with open(to, "w") as file:
             _redirect_stdout(to=file)
         try:
             yield  # allow code to be run with the redirected stdout
@@ -58,6 +58,7 @@ def capture_stdout(to=None):
     tmpfile = None
     if to is None:
         import tempfile
+
         tmpfile = tempfile.NamedTemporaryFile(delete=False)
         to = tmpfile.name
 

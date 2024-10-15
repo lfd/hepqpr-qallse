@@ -26,24 +26,24 @@ class DataWrapper:
 
         # add proper indexing
         for df in [self.hits, self.truth]:
-            df['idx'] = df.hit_id.values
-            df.set_index('idx', inplace=True)
+            df["idx"] = df.hit_id.values
+            df.set_index("idx", inplace=True)
 
         # add radius information
-        hits['r'] = np.linalg.norm(hits[['x', 'y']].values.T, axis=0)
+        hits["r"] = np.linalg.norm(hits[["x", "y"]].values.T, axis=0)
 
         # keep a lookup of real doublets: '{hit_id_1}_{hit_id_2}' -> [hit_id_1, hit_id_2]
-        df = hits.join(truth, lsuffix='_')
+        df = hits.join(truth, lsuffix="_")
         self._doublets = truth_to_xplets(hits, df[df.weight > 0], x=2)
         self._unfocused = truth_to_xplets(hits, df[df.weight == 0], x=2)
 
         self._lookup = dict(
-            [(self._get_dkey(*d), XpletType.REAL) for d in self._doublets] +
-            [(self._get_dkey(*d), XpletType.REAL_UNFOCUSED) for d in self._unfocused]
+            [(self._get_dkey(*d), XpletType.REAL) for d in self._doublets]
+            + [(self._get_dkey(*d), XpletType.REAL_UNFOCUSED) for d in self._unfocused]
         )
 
     def _get_dkey(self, h1, h2):
-        return f'{h1}_{h2}'
+        return f"{h1}_{h2}"
 
     def get_unfocused_doublets(self) -> List[TDoublet]:
         return self._unfocused
@@ -80,12 +80,12 @@ class DataWrapper:
         sample = dict()
         for (k1, k2), v in Q.items():
             if k1 == k2:
-                subtrack = list(map(int, k1.split('_')))
+                subtrack = list(map(int, k1.split("_")))
                 sample[k1] = int(self.is_real_xplet(subtrack) != XpletType.FAKE)
         return sample
 
     def compute_energy(self, Q: TQubo, sample: Optional[TDimodSample] = None) -> float:
-        """Compute the energy of a given sample. If sample is None, the ideal sample is used (see :py:meth:~`sample_qubo`). """
+        """Compute the energy of a given sample. If sample is None, the ideal sample is used (see :py:meth:~`sample_qubo`)."""
         if sample is None:
             sample = self.sample_qubo(Q)
         en = 0
@@ -96,17 +96,22 @@ class DataWrapper:
 
     # =============== scoring
 
-    def get_score_numbers(self, doublets: Union[List, np.array, pd.DataFrame]) -> [float, float, float]:
+    def get_score_numbers(
+        self, doublets: Union[List, np.array, pd.DataFrame]
+    ) -> [float, float, float]:
         """
         :param doublets: a set of doublets
         :return: the number of real, fake and missing doublets
         """
-        if isinstance(doublets, pd.DataFrame): doublets = doublets.values
+        if isinstance(doublets, pd.DataFrame):
+            doublets = doublets.values
         doublets_found, _, unfocused_found = diff_rows(doublets, self._unfocused)
         missing, fakes, real = diff_rows(self._doublets, doublets_found)
         return len(real), len(fakes), len(missing)
 
-    def compute_score(self, doublets: Union[List, np.array, pd.DataFrame]) -> [float, float, List[List]]:
+    def compute_score(
+        self, doublets: Union[List, np.array, pd.DataFrame]
+    ) -> [float, float, List[List]]:
         """
         Precision and recall are defined as follow:
         * precision (purity): how many doublets are correct ? `len(real ∈ doublets) / len(doublets)`
@@ -115,14 +120,15 @@ class DataWrapper:
         :param doublets: a set of doublets
         :return: the precision, the recall and the list of missing doublets. p and r are between 0 and 1.
         """
-        if isinstance(doublets, pd.DataFrame): doublets = doublets.values
+        if isinstance(doublets, pd.DataFrame):
+            doublets = doublets.values
         doublets_found, _, unfocused_found = diff_rows(doublets, self._unfocused)
         missing, fakes, real = diff_rows(self._doublets, doublets_found)
-        return len(real) / len(doublets_found), \
-               len(real) / len(self._doublets), \
-               missing
+        return len(real) / len(doublets_found), len(real) / len(self._doublets), missing
 
-    def add_missing_doublets(self, doublets: Union[np.array, pd.DataFrame]) -> pd.DataFrame:
+    def add_missing_doublets(
+        self, doublets: Union[np.array, pd.DataFrame]
+    ) -> pd.DataFrame:
         """
         :param doublets: a list of doublets
         :return: a list of doublets with 100% recall
@@ -131,19 +137,21 @@ class DataWrapper:
             doublets = doublets.values
 
         ip, ir, missing = self.compute_score(doublets)
-        print(f'got {len(doublets)} doublets.')
-        print(f'  Input precision (%): {ip * 100:.4f}, recall (%): {ir * 100:.4f}')
+        print(f"got {len(doublets)} doublets.")
+        print(f"  Input precision (%): {ip * 100:.4f}, recall (%): {ir * 100:.4f}")
 
         if len(missing) == 0:
             # nothing to do
             return doublets
         else:
-            ret = pd.DataFrame(np.vstack((doublets, missing)), columns=['start', 'end'])
+            ret = pd.DataFrame(np.vstack((doublets, missing)), columns=["start", "end"])
             p, _, _ = self.compute_score(ret.values)
-            print(f'    New precision (%): {p * 100:.4f}')
+            print(f"    New precision (%): {p * 100:.4f}")
             return ret
 
-    def compute_trackml_score(self, final_tracks: List[TXplet], submission=None) -> float:
+    def compute_trackml_score(
+        self, final_tracks: List[TXplet], submission=None
+    ) -> float:
         """
         :param final_tracks: a list of xplets representing tracks
         :param submission: (optional) a TrackML submission, see :py:meth:~`create_submission`
@@ -159,9 +167,13 @@ class DataWrapper:
         n_rows = len(hit_ids)
         sub_data = np.column_stack(([event_id] * n_rows, hit_ids, np.zeros(n_rows)))
         submission = pd.DataFrame(
-            data=sub_data, columns=["event_id", "hit_id", "track_id"], index=hit_ids, dtype=int)
+            data=sub_data,
+            columns=["event_id", "hit_id", "track_id"],
+            index=hit_ids,
+            dtype=int,
+        )
         for idx, track in enumerate(tracks):
-            submission.loc[track, 'track_id'] = idx + 1
+            submission.loc[track, "track_id"] = idx + 1
         return submission
 
     # =============== class utils
@@ -172,5 +184,7 @@ class DataWrapper:
         Create a DataWrapper by reading the hits and the truth from a path.
         :path: the path + event id, in the format `/path/to/directory/eventXXXXX`
         """
-        path = path.replace('-hits.csv', '')
-        return cls(hits=pd.read_csv(path + '-hits.csv'), truth=pd.read_csv(path + '-truth.csv'))
+        path = path.replace("-hits.csv", "")
+        return cls(
+            hits=pd.read_csv(path + "-hits.csv"), truth=pd.read_csv(path + "-truth.csv")
+        )

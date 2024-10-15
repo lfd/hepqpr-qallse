@@ -2,7 +2,9 @@ import numpy as np
 from .storage import *
 
 
-def doublet_making(constants, spStorage: SpacepointStorage, detModel, doubletsStorage: DoubletStorage):
+def doublet_making(
+    constants, spStorage: SpacepointStorage, detModel, doubletsStorage: DoubletStorage
+):
     """
     Implementation of the DoubletCountingKernelCuda.cuh
     """
@@ -15,7 +17,9 @@ def doublet_making(constants, spStorage: SpacepointStorage, detModel, doubletsSt
             if nMiddleSPs == 0:
                 continue  # break
 
-            for spmIdx in range(spBegin, spEnd):  # iterate over the spacepoint of the phiSlice/layer
+            for spmIdx in range(
+                spBegin, spEnd
+            ):  # iterate over the spacepoint of the phiSlice/layer
                 isPixel = spStorage.type[spmIdx]
                 spmZ = spStorage.z[spmIdx]
                 spmR = spStorage.r[spmIdx]
@@ -24,7 +28,9 @@ def doublet_making(constants, spStorage: SpacepointStorage, detModel, doubletsSt
                 inner = []
                 outer = []
 
-                for deltaSlice in range(-1, 2):  # iterate over adjacent and current phi slices
+                for deltaSlice in range(
+                    -1, 2
+                ):  # iterate over adjacent and current phi slices
                     nextSlice = sliceIdx + deltaSlice
                     if nextSlice >= constants.nPhiSlices:
                         nextSlice = 0
@@ -48,14 +54,17 @@ def doublet_making(constants, spStorage: SpacepointStorage, detModel, doubletsSt
                             mask_rad = np.abs(delta_radius) < 10
                             # look for theta angles not too big (we want vertical-ish segments)
                             delta_radius[delta_radius == 0] = 0.1  # avoid nan
-                            thetas = (spStorage.z[next_spBegin:next_spEnd] - spmZ) / delta_radius
+                            thetas = (
+                                spStorage.z[next_spBegin:next_spEnd] - spmZ
+                            ) / delta_radius
                             mask_theta = np.abs(thetas) < constants.maxCtg
                             # get all corresponding hits
                             final_mask = (mask_theta == 1) & (mask_rad == 1)
                             all_ids = np.arange(next_spBegin, next_spEnd)[final_mask]
                             # finally, create the segments
                             for spIdx in all_ids:
-                                if spIdx == spmIdx: continue
+                                if spIdx == spmIdx:
+                                    continue
                                 if spStorage.r[spIdx] - spmR > 0:
                                     outer.append(spIdx)
                                 else:
@@ -67,8 +76,10 @@ def doublet_making(constants, spStorage: SpacepointStorage, detModel, doubletsSt
                         layerGeo = detModel.layers[next_layer]
                         isBarrel = layerGeo.type == 0
                         refCoord = layerGeo.refCoord
-                        if isBarrel and np.abs(
-                                refCoord - spmR) > constants.maxDoubletLength:  # if double is too long -->next
+                        if (
+                            isBarrel
+                            and np.abs(refCoord - spmR) > constants.maxDoubletLength
+                        ):  # if double is too long -->next
                             continue
 
                         # compute min/max boundaries
@@ -78,11 +89,25 @@ def doublet_making(constants, spStorage: SpacepointStorage, detModel, doubletsSt
                             # see schema p 57 (Julien) - Figure 3.5
                             # projection on the current layer:
                             # tan(theta) = refc/x = spmR/(spmZ-zMinus) => x = (smpZ-zMinus)/smpR * refc
-                            minCoord = constants.zMinus + refCoord * (spmZ - constants.zMinus) / spmR
-                            maxCoord = constants.zPlus + refCoord * (spmZ - constants.zPlus) / spmR
+                            minCoord = (
+                                constants.zMinus
+                                + refCoord * (spmZ - constants.zMinus) / spmR
+                            )
+                            maxCoord = (
+                                constants.zPlus
+                                + refCoord * (spmZ - constants.zPlus) / spmR
+                            )
                         else:
-                            minCoord = spmR * (refCoord - constants.zMinus) / (spmZ - constants.zMinus)
-                            maxCoord = spmR * (refCoord - constants.zPlus) / (spmZ - constants.zPlus)
+                            minCoord = (
+                                spmR
+                                * (refCoord - constants.zMinus)
+                                / (spmZ - constants.zMinus)
+                            )
+                            maxCoord = (
+                                spmR
+                                * (refCoord - constants.zPlus)
+                                / (spmZ - constants.zPlus)
+                            )
 
                         if minCoord > maxCoord:
                             tmp = minCoord
@@ -95,26 +120,38 @@ def doublet_making(constants, spStorage: SpacepointStorage, detModel, doubletsSt
                             continue
 
                         # we computed the limit of the zone that is interesting. Now, we actually look at the hits.
-                        for spIdx in range(next_spBegin,
-                                           next_spEnd):  # iterate over spacepoints in the adjacent / same phi bins and outer/inner layers
+                        for spIdx in range(
+                            next_spBegin, next_spEnd
+                        ):  # iterate over spacepoints in the adjacent / same phi bins and outer/inner layers
                             zsp = spStorage.z[spIdx]
                             rsp = spStorage.r[spIdx]
                             spHid = spStorage.idsp[spIdx]  # TODO debug
                             spCoord = zsp if isBarrel else rsp
-                            if spCoord < minCoord or spCoord > maxCoord:  # if out of boundaries --> next
+                            if (
+                                spCoord < minCoord or spCoord > maxCoord
+                            ):  # if out of boundaries --> next
                                 continue
 
                             isPixel2 = spStorage.type[spIdx]
                             delta_radius = rsp - spmR  # delta_radius
-                            if np.abs(delta_radius) > constants.maxDoubletLength or np.abs(
-                                    delta_radius) < constants.minDoubletLength:
+                            if (
+                                np.abs(delta_radius) > constants.maxDoubletLength
+                                or np.abs(delta_radius) < constants.minDoubletLength
+                            ):
                                 continue
-                            if (not constants.doPSS) and delta_radius < 0 and (not isPixel) and isPixel2:
+                            if (
+                                (not constants.doPSS)
+                                and delta_radius < 0
+                                and (not isPixel)
+                                and isPixel2
+                            ):
                                 # TODO: what happens if we switch doPSS to true ? not clear...
                                 continue
 
                             delta_z = zsp - spmZ
-                            t = delta_z / delta_radius  # which is very close to the delta theta ??
+                            t = (
+                                delta_z / delta_radius
+                            )  # which is very close to the delta theta ??
                             if np.abs(t) > constants.maxCtg:  # segments too horizontal
                                 continue
                             # projecting the 2nd point to the outer radius and see the z.
@@ -122,7 +159,11 @@ def doublet_making(constants, spStorage: SpacepointStorage, detModel, doubletsSt
                             # outZ = zsp + (constants.maxOuterRadius - rsp) * t
                             outZ = constants.maxOuterRadius * t  # easier
                             if outZ < constants.minOuterZ or outZ > constants.maxOuterZ:
-                                assert not (constants.minOuterZ <= outZ <= constants.maxOuterRadius)
+                                assert not (
+                                    constants.minOuterZ
+                                    <= outZ
+                                    <= constants.maxOuterRadius
+                                )
                                 continue
                             if delta_radius > 0:
                                 outer.append(spIdx)

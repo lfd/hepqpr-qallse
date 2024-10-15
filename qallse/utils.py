@@ -18,14 +18,17 @@ def load_hits(path: str) -> pd.DataFrame:
     :param path: the path to the file (the suffix `-hits.csv` is optional). Example: `/path/to/dir/event000001000`
     :return: the dataframe of hits
     """
-    if not path.endswith('.csv'): path = f'{path}-hits.csv'
-    hits = pd.read_csv(path).set_index('hit_id', drop=False)
-    hits.index.rename('idx', inplace=True)
-    hits['r'] = np.linalg.norm(hits[['x', 'y']].values.T, axis=0)
+    if not path.endswith(".csv"):
+        path = f"{path}-hits.csv"
+    hits = pd.read_csv(path).set_index("hit_id", drop=False)
+    hits.index.rename("idx", inplace=True)
+    hits["r"] = np.linalg.norm(hits[["x", "y"]].values.T, axis=0)
     return hits
 
 
-def load_truth(path: str, hits: pd.DataFrame = None) -> Union[pd.DataFrame, Tuple[pd.DataFrame, List]]:
+def load_truth(
+    path: str, hits: pd.DataFrame = None
+) -> Union[pd.DataFrame, Tuple[pd.DataFrame, List]]:
     """
     Load truth from a csv file, set the index to the `hit_id` and optionally reconstruct the real tracks.
     :param path: the path to the file (the suffix `-truth.csv` is optional). Example: `/path/to/dir/event000001000`
@@ -33,9 +36,10 @@ def load_truth(path: str, hits: pd.DataFrame = None) -> Union[pd.DataFrame, Tupl
     :return: either a dataframe,
         or a dataframe and a list of tracks (represented as a list of hit ids ordered by radius, ascending)
     """
-    if not path.endswith('.csv'): path = f'{path}-truth.csv'
-    truth = pd.read_csv(path).set_index('hit_id', drop=False)
-    truth.index.rename('idx', inplace=True)
+    if not path.endswith(".csv"):
+        path = f"{path}-truth.csv"
+    truth = pd.read_csv(path).set_index("hit_id", drop=False)
+    truth.index.rename("idx", inplace=True)
     if hits is not None:
         return truth, recreate_tracks(hits, truth)
     else:
@@ -46,18 +50,19 @@ def load_truth(path: str, hits: pd.DataFrame = None) -> Union[pd.DataFrame, Tupl
 # segments/tracks conversion
 # ==========================
 
+
 def track_to_xplets(track: TXplet, x=2) -> List[TXplet]:
     """
     Convert a track to a list of xplets. precondition: x <= length of the track.
     :param x: the size of the resulting xplets. Default to 2 (doublet)
     :return: a list of xplets of size x
     """
-    return [track[n:n + x] for n in range(len(track) - x + 1)]
+    return [track[n : n + x] for n in range(len(track) - x + 1)]
 
 
 def tracks_to_xplets(tracks: List[TXplet], x=2) -> List[TXplet]:
-    """Convert a list of tracks to a list of xplets (flattened). """
-    return [track[n:n + x] for track in tracks for n in range(len(track) - x + 1)]
+    """Convert a list of tracks to a list of xplets (flattened)."""
+    return [track[n : n + x] for track in tracks for n in range(len(track) - x + 1)]
 
 
 def recreate_tracks(hits: pd.DataFrame, df: pd.DataFrame) -> List[TXplet]:
@@ -69,10 +74,12 @@ def recreate_tracks(hits: pd.DataFrame, df: pd.DataFrame) -> List[TXplet]:
     :return: a list of tracks, each track encoded as a list of hit_id ordered by increasing radius
     """
     tracks = []
-    if 'r' not in hits: hits['r'] = np.linalg.norm(hits[['x', 'y']].values.T)
-    for particle_id, df in df.groupby('particle_id'):
-        if particle_id == 0: continue
-        track = hits.loc[df.hit_id.values].sort_values('r').hit_id.values
+    if "r" not in hits:
+        hits["r"] = np.linalg.norm(hits[["x", "y"]].values.T)
+    for particle_id, df in df.groupby("particle_id"):
+        if particle_id == 0:
+            continue
+        track = hits.loc[df.hit_id.values].sort_values("r").hit_id.values
         tracks.append(track)
     return tracks
 
@@ -91,6 +98,7 @@ def truth_to_xplets(hits, df, x=2) -> List[TXplet]:
 # math
 # ==========================
 
+
 def angle_between(v1, v2):
     """Compute the angle between two vectors."""
     v1_u = v1 / np.linalg.norm(v1)
@@ -99,14 +107,14 @@ def angle_between(v1, v2):
 
 
 def angle_diff(angle1, angle2):
-    """Compute the absolute difference between to angles in radiant. The result is between [0, π]. """
+    """Compute the absolute difference between to angles in radiant. The result is between [0, π]."""
     delta_angle = abs(angle2 - angle1)
     return delta_angle if delta_angle <= np.pi else 2 * np.pi - delta_angle
 
 
 def curvature(p0, p1, p2):
     """Compute the `Menger curvature <https://en.wikipedia.org/wiki/Menger_curvature>`_ between three
-    3D points. """
+    3D points."""
     # cf. Menger: curvature = 1/R = 4*triangleArea/(sideLength1*sideLength2*sideLength3)
     # Adapted from https://stackoverflow.com/questions/41144224/calculate-curvature-for-3-points-x-y
     (x0, y0), (x1, y1), (x2, y2) = (p0, p1, p2)
@@ -149,10 +157,13 @@ def define_circle(p1, p2, p3):
 # pandas/numpy utils
 # ==========================
 
+
 def intersect_rows(a, b):
     """Return the intersection between a and b, row-wise."""
-    if isinstance(a, np.ndarray): a = a.tolist()
-    if isinstance(b, np.ndarray): b = b.tolist()
+    if isinstance(a, np.ndarray):
+        a = a.tolist()
+    if isinstance(b, np.ndarray):
+        b = b.tolist()
     # return rows that are common to one another
     tmp = np.array(a + b)
     res, cnts = np.unique(tmp, return_counts=True, axis=0)
@@ -170,15 +181,17 @@ def diff_rows(a, b):
         * rows only in b,
         * rows in a and b
     """
-    if isinstance(a, np.ndarray): a = a.tolist()
-    if isinstance(b, np.ndarray): b = b.tolist()
+    if isinstance(a, np.ndarray):
+        a = a.tolist()
+    if isinstance(b, np.ndarray):
+        b = b.tolist()
     # return rows that are common to one another
     tmp = np.array(a + b)
     res, idx, cnt = np.unique(tmp, return_counts=True, return_index=True, axis=0)
     return (
         res[(cnt == 1) & (idx < len(a)), :].tolist(),  # only in a
         res[(cnt == 1) & (idx >= len(a)), :].tolist(),  # only in b
-        res[cnt > 1].tolist()  # in a and b
+        res[cnt > 1].tolist(),  # in a and b
     )
 
 
@@ -186,10 +199,12 @@ def pd_read_csv_array(csv_rows: List[str], **kwargs):
     """Create a pandas dataframe from a list of rows in csv format. The first row is the header. Additional parameters
     will be passed to `pd.read_csv`."""
     import pandas as pd
+
     # create a pseudo-file with the results as CSV
     from io import StringIO
+
     csv = StringIO()
-    csv.write('\n'.join(csv_rows))
+    csv.write("\n".join(csv_rows))
     csv.seek(0)
     # get the results into a pandas dataframe
     return pd.read_csv(csv, **kwargs)
@@ -199,12 +214,14 @@ def pd_read_csv_array(csv_rows: List[str], **kwargs):
 # other
 # ==========================
 
+
 def merge_dicts(default, overrides):
     """
     Merge ``override`` into ``default`` recursively.
     As the names suggest, if an entry is defined in both, the value in ``overrides`` takes precedence.
     """
     import collections
+
     for k, v in overrides.items():
         if isinstance(v, collections.Mapping):
             default[k] = merge_dicts(default.get(k, {}), v)

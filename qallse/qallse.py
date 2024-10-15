@@ -17,13 +17,13 @@ class Config(ConfigBase):
 
     #: Maximum radius of curvature for a triplet. The curvature is computed using
     #: the *Mengel curvature*.
-    tplet_max_curv = 5E-3
+    tplet_max_curv = 5e-3
     #: Maximum (absolute) difference between the angles in the R-Z plane of the two doublets forming
     #: the triplet. The angles are defined as arctan(dz/dr).
     tplet_max_drz = 0.2
 
     #: Maximum difference between the radius of curvature of the two triplets forming the quadruplet.
-    qplet_max_dcurv = 5E-4
+    qplet_max_dcurv = 5e-4
     #: Maximum strength of a quadruplet. This cut is really efficient, but the actual value depends
     #: highly on the strength function parameters (see below)
     qplet_max_strength = -0.2
@@ -53,9 +53,9 @@ class Config(ConfigBase):
 
 
 class Config1GeV(Config):
-    tplet_max_curv = 8E-4  # (vs 5E-3)
+    tplet_max_curv = 8e-4  # (vs 5E-3)
     tplet_max_drz = 0.1  # (vs0.2)
-    qplet_max_dcurv = 1E-4  # (vs4E-4)
+    qplet_max_dcurv = 1e-4  # (vs4E-4)
 
 
 class Qallse(QallseBase):
@@ -64,10 +64,10 @@ class Qallse(QallseBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.hard_cuts_stats = ['type,hid,reason,arg1,arg2']
+        self.hard_cuts_stats = ["type,hid,reason,arg1,arg2"]
 
     def _get_base_config(self):
-        return Config1GeV() # TODO
+        return Config1GeV()  # TODO
 
     def get_build_stats(self) -> pd.DataFrame:
         """Return a dataframe, each row corresponding to a real xplet that has been dropped during preprocessing."""
@@ -80,15 +80,17 @@ class Qallse(QallseBase):
         self.log_build_stats()
 
     def log_build_stats(self):
-        """ Log information about real doublets/triplets/quadruplets dropped during model building"""
+        """Log information about real doublets/triplets/quadruplets dropped during model building"""
         stats = self.get_build_stats()
         if stats.shape[0] > 0:
-            self.logger.info(f'Dropped {len(stats)} real structures during preprocessing')
+            self.logger.info(
+                f"Dropped {len(stats)} real structures during preprocessing"
+            )
             if len(stats) <= 10:
-                self.logger.debug('\n' + stats.to_string())
-            details = 'Dropped type:reason:count => '
-            for (typ, reason), df in stats.groupby(['type', 'reason']):
-                details += f'{typ}:{reason}:{len(df)} '
+                self.logger.debug("\n" + stats.to_string())
+            details = "Dropped type:reason:count => "
+            for (typ, reason), df in stats.groupby(["type", "reason"]):
+                details += f"{typ}:{reason}:{len(df)} "
             self.logger.info(details)
 
     # --------------- early cuts
@@ -100,7 +102,7 @@ class Qallse(QallseBase):
         v1, v2 = dblet.h1.volayer, dblet.h2.volayer
         ret = v1 >= v2 or v2 > v1 + self.config.max_layer_span
         if ret and self.dataw.is_real_doublet(dblet.hit_ids()) == XpletType.REAL:
-            self.hard_cuts_stats.append(f'dblet,{dblet},volayer,{v1},{v2}')
+            self.hard_cuts_stats.append(f"dblet,{dblet},volayer,{v1},{v2}")
             return not self.config.cheat
         return ret
 
@@ -117,19 +119,19 @@ class Qallse(QallseBase):
         volayer_skip = tplet.hits[-1].volayer - tplet.hits[0].volayer
         if volayer_skip > self.config.max_layer_span + 1:
             if is_real:
-                self.hard_cuts_stats.append(f'tplet,{tplet},volayer,{volayer_skip},')
+                self.hard_cuts_stats.append(f"tplet,{tplet},volayer,{volayer_skip},")
                 return not self.config.cheat
             return True
         # radius of curvature formed by the three hits
         if abs(tplet.curvature) > self.config.tplet_max_curv:
             if is_real:
-                self.hard_cuts_stats.append(f'tplet,{tplet},curv,{tplet.curvature},')
+                self.hard_cuts_stats.append(f"tplet,{tplet},curv,{tplet.curvature},")
                 return not self.config.cheat
             return True
         # angle between the two doublets in the rz plane
         if tplet.drz > self.config.tplet_max_drz:
             if is_real:
-                self.hard_cuts_stats.append(f'tplet,{tplet},drz,{tplet.drz},')
+                self.hard_cuts_stats.append(f"tplet,{tplet},drz,{tplet.drz},")
                 return not self.config.cheat
             return True
         return False
@@ -144,14 +146,14 @@ class Qallse(QallseBase):
         # delta delta curvature between the two triplets
         ret = qplet.delta_curvature > self.config.qplet_max_dcurv
         if ret and is_real:
-            self.hard_cuts_stats.append(f'qplet,{qplet},dcurv,{qplet.delta_curvature},')
+            self.hard_cuts_stats.append(f"qplet,{qplet},dcurv,{qplet.delta_curvature},")
             return not self.config.cheat
 
         # strength of the quadruplet
         qplet.strength = self._compute_strength(qplet)
         ret = qplet.strength > self.config.qplet_max_strength
         if ret and is_real:
-            self.hard_cuts_stats.append(f'qplet,{qplet},strength,{qplet.strength},')
+            self.hard_cuts_stats.append(f"qplet,{qplet},strength,{qplet.strength},")
             return not self.config.cheat
         return ret
 
@@ -172,16 +174,21 @@ class Qallse(QallseBase):
             return qplet.strength
 
         # normalised difference of curvature between the two triplets
-        xy_strength = 1 - ((qplet.delta_curvature / self.config.qplet_max_dcurv) ** self.config.xy_power)
+        xy_strength = 1 - (
+            (qplet.delta_curvature / self.config.qplet_max_dcurv)
+            ** self.config.xy_power
+        )
 
         # normalised [maximum] angle in the R-Z plane
         max_drz = max(qplet.t1.drz, qplet.t2.drz)
-        rz_strength = 1 - ((max_drz / self.config.tplet_max_drz) ** self.config.rz_power)
+        rz_strength = 1 - (
+            (max_drz / self.config.tplet_max_drz) ** self.config.rz_power
+        )
 
         # numerator: combine both X-Y and R-Z plane information
         numerator = self.config.num_multiplier * (
-                self.config.xy_relative_strength * xy_strength +
-                (1 - self.config.xy_relative_strength) * rz_strength
+            self.config.xy_relative_strength * xy_strength
+            + (1 - self.config.xy_relative_strength) * rz_strength
         )
 
         # denominator: shrink the strength proportional to the number of layer miss
