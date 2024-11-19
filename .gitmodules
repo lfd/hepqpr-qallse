@@ -1,0 +1,3 @@
+[submodule "trackml"]
+	path = trackml
+	url = git@github.com:stroblme/trackml-library.git
